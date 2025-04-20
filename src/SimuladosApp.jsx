@@ -1,10 +1,7 @@
 // Web App de Simulados Militares com IA (GPT-4 via Make)
-// Desenvolvido para rodar no domínio www.guidobigode.com
+// Componente principal: SimuladosApp.jsx
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { motion } from "framer-motion";
 
 const disciplinas = {
   "História": [
@@ -51,17 +48,20 @@ export default function SimuladosApp() {
   const [questao, setQuestao] = useState(null);
   const [respostaAluno, setRespostaAluno] = useState(null);
   const [feedback, setFeedback] = useState(null);
+  const [carregando, setCarregando] = useState(false);
 
   async function gerarQuestao() {
     setQuestao(null);
     setFeedback(null);
-    const response = await fetch("https://hook.us1.make.com/SEU_WEBHOOK_DO_MAKE", {
+    setCarregando(true);
+    const response = await fetch("https://hook.us1.make.com/SEU_WEBHOOK_DE_GERACAO", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ disciplina, tema, dificuldade })
     });
     const data = await response.json();
     setQuestao(data);
+    setCarregando(false);
   }
 
   async function responder(alternativa) {
@@ -81,17 +81,14 @@ export default function SimuladosApp() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Simulados Militares com IA</h1>
+    <div style={{ padding: "2rem", maxWidth: "700px", margin: "auto", fontFamily: "sans-serif" }}>
+      <h1 style={{ fontSize: "1.8rem", marginBottom: "1rem" }}>🎖️ Simulados Militares com IA</h1>
 
-      <div className="grid gap-4">
-        <select
-          className="p-2 border rounded"
-          onChange={(e) => {
-            setDisciplina(e.target.value);
-            setTema("");
-          }}
-        >
+      <div style={{ display: "grid", gap: "1rem", marginBottom: "1rem" }}>
+        <select onChange={(e) => {
+          setDisciplina(e.target.value);
+          setTema("");
+        }} value={disciplina}>
           <option value="">Selecione a disciplina</option>
           {Object.keys(disciplinas).map((d) => (
             <option key={d}>{d}</option>
@@ -99,10 +96,7 @@ export default function SimuladosApp() {
         </select>
 
         {disciplina && (
-          <select
-            className="p-2 border rounded"
-            onChange={(e) => setTema(e.target.value)}
-          >
+          <select onChange={(e) => setTema(e.target.value)} value={tema}>
             <option value="">Selecione o tema</option>
             {disciplinas[disciplina].map((t) => (
               <option key={t}>{t}</option>
@@ -110,50 +104,50 @@ export default function SimuladosApp() {
           </select>
         )}
 
-        <select
-          className="p-2 border rounded"
-          onChange={(e) => setDificuldade(e.target.value)}
-        >
+        <select onChange={(e) => setDificuldade(e.target.value)} value={dificuldade}>
           <option value="Fácil">Fácil</option>
           <option value="Média">Média</option>
           <option value="Difícil">Difícil</option>
         </select>
 
-        <Button onClick={gerarQuestao} disabled={!disciplina || !tema}>
-          Gerar Questão
-        </Button>
+        <button onClick={gerarQuestao} disabled={!disciplina || !tema || carregando}>
+          {carregando ? "Gerando..." : "Gerar Questão"}
+        </button>
       </div>
 
       {questao && (
-        <Card className="mt-6">
-          <CardContent className="space-y-4">
-            <p><strong>Questão:</strong> {questao.enunciado}</p>
+        <div style={{ border: "1px solid #ccc", borderRadius: "8px", padding: "1rem", marginTop: "1rem" }}>
+          <p><strong>Questão:</strong> {questao.enunciado}</p>
+          <div style={{ display: "grid", gap: "0.5rem", marginTop: "1rem" }}>
             {questao.alternativas.map((alt, i) => (
-              <Button
+              <button
                 key={i}
                 onClick={() => responder(alt.letra)}
-                variant={respostaAluno === alt.letra ? "default" : "outline"}
+                style={{
+                  padding: "0.5rem 1rem",
+                  border: "1px solid #999",
+                  borderRadius: "4px",
+                  background: respostaAluno === alt.letra ? "#0070f3" : "white",
+                  color: respostaAluno === alt.letra ? "white" : "black",
+                  cursor: "pointer"
+                }}
               >
                 {alt.letra}) {alt.texto}
-              </Button>
+              </button>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {feedback && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-6 p-4 border rounded bg-gray-100"
-        >
-          <p className="font-bold text-lg">
+        <div style={{ marginTop: "1.5rem", padding: "1rem", background: "#f1f1f1", borderRadius: "8px" }}>
+          <p style={{ fontWeight: "bold", fontSize: "1.2rem" }}>
             {feedback.acertou ? "✅ Você acertou!" : "❌ Você errou."}
           </p>
           <p><strong>Gabarito:</strong> {feedback.gabarito}</p>
           <p><strong>Explicação:</strong> {feedback.explicacao}</p>
           {feedback.dica && <p><strong>Dica:</strong> {feedback.dica}</p>}
-        </motion.div>
+        </div>
       )}
     </div>
   );
